@@ -1,0 +1,621 @@
+# Medical Image Segmentation with U-NET
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Medical Image Segmentation - U-NET Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .info-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border-left: 5px solid #667eea;
+        }
+
+        .info-section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.8em;
+        }
+
+        .info-section p {
+            line-height: 1.8;
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+        .demo-section {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 15px;
+            border: 2px dashed #667eea;
+            margin-bottom: 30px;
+        }
+
+        .demo-section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+            text-align: center;
+        }
+
+        .upload-area {
+            text-align: center;
+            padding: 40px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .upload-area:hover {
+            background: #e9ecef;
+            transform: scale(1.02);
+        }
+
+        .upload-area.dragover {
+            background: #d1e7ff;
+            border-color: #0066cc;
+        }
+
+        .upload-icon {
+            font-size: 4em;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .image-display {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .image-container {
+            text-align: center;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .image-container h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .image-container canvas {
+            max-width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .architecture-section {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .architecture-section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.8em;
+        }
+
+        .unet-diagram {
+            text-align: center;
+            margin: 20px 0;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .feature-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        }
+
+        .feature-card h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .feature-card p {
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .status-message {
+            text-align: center;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            display: none;
+        }
+
+        .status-message.success {
+            background: #d4edda;
+            color: #155724;
+            display: block;
+        }
+
+        .status-message.error {
+            background: #f8d7da;
+            color: #721c24;
+            display: block;
+        }
+
+        footer {
+            background: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 1.8em;
+            }
+
+            .content {
+                padding: 20px;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🧠 Medical Image Segmentation</h1>
+            <p>AI-Powered MRI & CT Scan Analysis using U-NET Deep Learning Architecture</p>
+        </header>
+
+        <div class="content">
+            <!-- Introduction Section -->
+            <div class="info-section">
+                <h2>📋 About Medical Image Segmentation</h2>
+                <p>Medical image segmentation is a critical task in medical imaging that involves identifying and delineating specific structures, organs, or abnormalities within medical scans such as MRI, CT, or X-ray images. This process is essential for diagnosis, treatment planning, and monitoring disease progression.</p>
+                <p>Using advanced deep learning techniques like U-NET architecture, we can automatically segment anatomical structures with high precision, assisting radiologists and clinicians in making faster and more accurate diagnoses.</p>
+            </div>
+
+            <!-- U-NET Architecture Section -->
+            <div class="architecture-section">
+                <h2>🏗️ U-NET Architecture</h2>
+                <div class="unet-diagram">
+                    <svg width="100%" height="300" viewBox="0 0 800 300">
+                        <!-- Encoder Path -->
+                        <rect x="50" y="130" width="80" height="40" fill="#667eea" stroke="#000" stroke-width="2"/>
+                        <text x="90" y="155" text-anchor="middle" fill="white" font-weight="bold">Input</text>
+                        
+                        <rect x="160" y="110" width="80" height="80" fill="#667eea" stroke="#000" stroke-width="2"/>
+                        <text x="200" y="155" text-anchor="middle" fill="white" font-weight="bold">Conv1</text>
+                        
+                        <rect x="270" y="90" width="80" height="120" fill="#764ba2" stroke="#000" stroke-width="2"/>
+                        <text x="310" y="155" text-anchor="middle" fill="white" font-weight="bold">Conv2</text>
+                        
+                        <!-- Bottleneck -->
+                        <rect x="380" y="70" width="80" height="160" fill="#d6336c" stroke="#000" stroke-width="2"/>
+                        <text x="420" y="145" text-anchor="middle" fill="white" font-weight="bold">Bottle</text>
+                        <text x="420" y="165" text-anchor="middle" fill="white" font-weight="bold">neck</text>
+                        
+                        <!-- Decoder Path -->
+                        <rect x="490" y="90" width="80" height="120" fill="#764ba2" stroke="#000" stroke-width="2"/>
+                        <text x="530" y="155" text-anchor="middle" fill="white" font-weight="bold">UpConv2</text>
+                        
+                        <rect x="600" y="110" width="80" height="80" fill="#667eea" stroke="#000" stroke-width="2"/>
+                        <text x="640" y="155" text-anchor="middle" fill="white" font-weight="bold">UpConv1</text>
+                        
+                        <rect x="710" y="130" width="80" height="40" fill="#667eea" stroke="#000" stroke-width="2"/>
+                        <text x="750" y="155" text-anchor="middle" fill="white" font-weight="bold">Output</text>
+                        
+                        <!-- Arrows -->
+                        <line x1="130" y1="150" x2="160" y2="150" stroke="#000" stroke-width="2" marker-end="url(#arrowhead)"/>
+                        <line x1="240" y1="150" x2="270" y2="150" stroke="#000" stroke-width="2" marker-end="url(#arrowhead)"/>
+                        <line x1="350" y1="150" x2="380" y2="150" stroke="#000" stroke-width="2" marker-end="url(#arrowhead)"/>
+                        <line x1="460" y1="150" x2="490" y2="150" stroke="#000" stroke-width="2" marker-end="url(#arrowhead)"/>
+                        <line x1="570" y1="150" x2="600" y2="150" stroke="#000" stroke-width="2" marker-end="url(#arrowhead)"/>
+                        <line x1="680" y1="150" x2="710" y2="150" stroke="#000" stroke-width="2" marker-end="url(#arrowhead)"/>
+                        
+                        <!-- Skip connections -->
+                        <path d="M 200 110 Q 200 50 530 50 Q 530 90 530 90" stroke="#ff6b6b" stroke-width="3" fill="none" stroke-dasharray="5,5"/>
+                        <path d="M 310 90 Q 310 40 640 40 Q 640 110 640 110" stroke="#ff6b6b" stroke-width="3" fill="none" stroke-dasharray="5,5"/>
+                        
+                        <!-- Arrow marker definition -->
+                        <defs>
+                            <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                                <polygon points="0 0, 10 3.5, 0 7" fill="#000"/>
+                            </marker>
+                        </defs>
+                        
+                        <!-- Labels -->
+                        <text x="400" y="20" text-anchor="middle" fill="#ff6b6b" font-weight="bold">Skip Connections</text>
+                        <text x="200" y="270" text-anchor="middle" fill="#000" font-weight="bold">Encoder (Contracting Path)</text>
+                        <text x="600" y="270" text-anchor="middle" fill="#000" font-weight="bold">Decoder (Expanding Path)</text>
+                    </svg>
+                </div>
+                <p style="color: #555; line-height: 1.8; margin-top: 20px;">
+                    <strong>U-NET</strong> is a convolutional neural network architecture designed specifically for biomedical image segmentation. It consists of a contracting path (encoder) that captures context and a symmetric expanding path (decoder) that enables precise localization. The skip connections between encoder and decoder help preserve spatial information lost during downsampling.
+                </p>
+            </div>
+
+            <!-- Features Section -->
+            <div class="features-grid">
+                <div class="feature-card">
+                    <h3>🎯 High Accuracy</h3>
+                    <p>U-NET achieves state-of-the-art segmentation accuracy on medical imaging datasets, often matching or exceeding human expert performance.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>⚡ Fast Processing</h3>
+                    <p>Once trained, the model can segment medical images in seconds, dramatically reducing analysis time compared to manual segmentation.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>🔬 Multiple Applications</h3>
+                    <p>Applicable to various medical imaging modalities including MRI, CT, ultrasound, and X-ray for different organs and pathologies.</p>
+                </div>
+                <div class="feature-card">
+                    <h3>💡 Clinical Support</h3>
+                    <p>Assists radiologists and clinicians in diagnosis, treatment planning, surgical guidance, and monitoring disease progression.</p>
+                </div>
+            </div>
+
+            <!-- Interactive Demo Section -->
+            <div class="demo-section">
+                <h2>🖼️ Interactive Segmentation Demo</h2>
+                <p style="text-align: center; color: #666; margin-bottom: 20px;">
+                    Upload a medical image (MRI or CT scan) to see simulated segmentation results
+                </p>
+
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📁</div>
+                    <h3>Click to Upload or Drag & Drop</h3>
+                    <p>Supported formats: JPG, PNG, DICOM</p>
+                    <input type="file" id="fileInput" accept="image/*">
+                </div>
+
+                <div style="text-align: center;">
+                    <button class="btn" id="segmentBtn" disabled>🔍 Segment Image</button>
+                    <button class="btn" id="clearBtn" style="background: #dc3545;">🗑️ Clear</button>
+                </div>
+
+                <div class="status-message" id="statusMessage"></div>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Processing image with U-NET model...</p>
+                </div>
+
+                <div class="image-display" id="imageDisplay"></div>
+            </div>
+
+            <!-- Applications Section -->
+            <div class="info-section">
+                <h2>🏥 Clinical Applications</h2>
+                <p><strong>Tumor Detection & Segmentation:</strong> Identifying and delineating brain tumors, lung nodules, liver lesions, and other abnormalities.</p>
+                <p><strong>Organ Segmentation:</strong> Segmenting organs such as heart, kidneys, liver, lungs for volume measurement and surgical planning.</p>
+                <p><strong>Vascular Analysis:</strong> Segmenting blood vessels for studying vascular diseases and planning interventions.</p>
+                <p><strong>Cardiac Imaging:</strong> Segmenting heart chambers and myocardium for assessing cardiac function and detecting abnormalities.</p>
+                <p><strong>Neuroimaging:</strong> Segmenting brain structures, white matter lesions, and identifying neurodegenerative changes.</p>
+            </div>
+        </div>
+
+        <footer>
+            <p>&copy; 2025 Medical Image Segmentation Platform | Powered by U-NET Deep Learning</p>
+        </footer>
+    </div>
+
+    <script>
+        // DOM Elements
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const segmentBtn = document.getElementById('segmentBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const imageDisplay = document.getElementById('imageDisplay');
+        const loading = document.getElementById('loading');
+        const statusMessage = document.getElementById('statusMessage');
+
+        let uploadedImage = null;
+
+        // Upload Area Click Handler
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        // File Input Change Handler
+        fileInput.addEventListener('change', handleFileSelect);
+
+        // Drag and Drop Handlers
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+                handleFile(file);
+            }
+        });
+
+        // Handle File Selection
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        }
+
+        // Handle File Processing
+        function handleFile(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                uploadedImage = new Image();
+                uploadedImage.onload = () => {
+                    showStatus('Image loaded successfully! Click "Segment Image" to process.', 'success');
+                    segmentBtn.disabled = false;
+                };
+                uploadedImage.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Segment Button Handler
+        segmentBtn.addEventListener('click', performSegmentation);
+
+        // Perform Segmentation (Simulated)
+        function performSegmentation() {
+            if (!uploadedImage) return;
+
+            loading.classList.add('active');
+            imageDisplay.innerHTML = '';
+            statusMessage.style.display = 'none';
+
+            // Simulate processing time
+            setTimeout(() => {
+                // Create canvases for display
+                const originalCanvas = createCanvas(uploadedImage, 'Original Image');
+                const segmentedCanvas = createCanvas(uploadedImage, 'Segmented Output');
+                const overlayCanvas = createCanvas(uploadedImage, 'Overlay View');
+
+                // Apply segmentation effects
+                applySegmentation(segmentedCanvas);
+                applyOverlay(overlayCanvas);
+
+                // Display results
+                imageDisplay.appendChild(createImageContainer('Original Image', originalCanvas));
+                imageDisplay.appendChild(createImageContainer('Segmented Regions', segmentedCanvas));
+                imageDisplay.appendChild(createImageContainer('Overlay View', overlayCanvas));
+
+                loading.classList.remove('active');
+                showStatus('Segmentation completed successfully!', 'success');
+            }, 2000);
+        }
+
+        // Create Canvas
+        function createCanvas(img, title) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size
+            const maxSize = 400;
+            const scale = Math.min(maxSize / img.width, maxSize / img.height);
+            canvas.width = img.width * scale;
+            canvas.height = img.height * scale;
+            
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            return canvas;
+        }
+
+        // Apply Segmentation Effect
+        function applySegmentation(canvas) {
+            const ctx = canvas.getContext('2d');
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+
+            // Simple edge detection and color mapping
+            for (let i = 0; i < data.length; i += 4) {
+                const brightness = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                
+                // Create segmented regions based on brightness
+                if (brightness < 85) {
+                    // Dark regions - Class 1 (Background)
+                    data[i] = 30;
+                    data[i + 1] = 30;
+                    data[i + 2] = 30;
+                } else if (brightness < 170) {
+                    // Medium regions - Class 2 (Tissue)
+                    data[i] = 102;
+                    data[i + 1] = 126;
+                    data[i + 2] = 234;
+                } else {
+                    // Bright regions - Class 3 (Target/Anomaly)
+                    data[i] = 214;
+                    data[i + 1] = 51;
+                    data[i + 2] = 108;
+                }
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        // Apply Overlay Effect
+        function applyOverlay(canvas) {
+            const ctx = canvas.getContext('2d');
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+
+            // Apply semi-transparent color overlay
+            for (let i = 0; i < data.length; i += 4) {
+                const brightness = (data[i] + data[i + 1] + data[i + 2]) / 3;
+                
+                if (brightness > 170) {
+                    // Highlight bright regions with red overlay
+                    data[i] = Math.min(255, data[i] + 100);
+                    data[i + 1] = Math.max(0, data[i + 1] - 50);
+                    data[i + 2] = Math.max(0, data[i + 2] - 50);
+                } else if (brightness > 85) {
+                    // Highlight medium regions with blue overlay
+                    data[i] = Math.max(0, data[i] - 30);
+                    data[i + 1] = Math.min(255, data[i + 1] + 30);
+                    data[i + 2] = Math.min(255, data[i + 2] + 80);
+                }
+            }
+
+            ctx.putImageData(imageData, 0, 0);
+        }
+
+        // Create Image Container
+        function createImageContainer(title, canvas) {
+            const container = document.createElement('div');
+            container.className = 'image-container';
+            
+            const heading = document.createElement('h3');
+            heading.textContent = title;
+            
+            container.appendChild(heading);
+            container.appendChild(canvas);
+            
+            return container;
+        }
+
+        // Clear Button Handler
+        clearBtn.addEventListener('click', () => {
+            uploadedImage = null;
+            fileInput.value = '';
+            imageDisplay.innerHTML = '';
+            segmentBtn.disabled = true;
+            statusMessage.style.display = 'none';
+            showStatus('Cleared. Ready for new image.', 'success');
+        });
+
+        // Show Status Message
+        function showStatus(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = `status-message ${type}`;
+            setTimeout(() => {
+                statusMessage.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
